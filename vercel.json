@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "app/api/parse/route.js": { "maxDuration": 60 },
+    "app/api/publish/route.js": { "maxDuration": 15 }
+  }
+}

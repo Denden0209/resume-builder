@@ -22,7 +22,20 @@ export default function Builder() {
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/parse", { method: "POST", body: fd });
-      const json = await res.json();
+      const raw = await res.text();
+      let json;
+      try {
+        json = JSON.parse(raw);
+      } catch {
+        // Non-JSON response = the platform intercepted the request (timeout, size limit, crash)
+        if (res.status === 504 || /timeout|timed out/i.test(raw)) {
+          throw new Error("The AI took too long and the server timed out. In Vercel: Settings → Functions → enable Fluid Compute, then redeploy. You can also set env var PARSE_MODEL=claude-haiku-4-5 for faster parsing.");
+        }
+        if (res.status === 413 || /too large/i.test(raw)) {
+          throw new Error("File too large for the server (max ~4MB). Try exporting a smaller PDF.");
+        }
+        throw new Error(`Server error (${res.status}). Check the Vercel function logs for /api/parse.`);
+      }
       if (!res.ok) throw new Error(json.error || "Parsing failed");
       setData(json.data);
       setJsonText(JSON.stringify(json.data, null, 2));

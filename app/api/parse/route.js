@@ -5,7 +5,7 @@ import { SYSTEM_PROMPT, PARSE_MODEL, validateData, extractJson } from "@/lib/pro
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MAX_BYTES = 8 * 1024 * 1024; // 8MB
+const MAX_BYTES = 4 * 1024 * 1024; // 4MB — Vercel rejects request bodies over ~4.5MB
 
 export async function POST(req) {
   try {
@@ -62,7 +62,7 @@ export async function POST(req) {
     const client = new Anthropic();
     const msg = await client.messages.create({
       model: PARSE_MODEL,
-      max_tokens: 8000,
+      max_tokens: 6000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userContent }],
     });
