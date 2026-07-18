@@ -3,7 +3,7 @@ import mammoth from "mammoth";
 import { SYSTEM_PROMPT, PARSE_MODEL, validateData, extractJson } from "@/lib/prompt";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const MAX_BYTES = 4 * 1024 * 1024; // 4MB — Vercel rejects request bodies over ~4.5MB
 
@@ -60,12 +60,13 @@ export async function POST(req) {
     }
 
     const client = new Anthropic();
-    const msg = await client.messages.create({
+    const stream = client.messages.stream({
       model: PARSE_MODEL,
       max_tokens: 6000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userContent }],
     });
+    const msg = await stream.finalMessage();
 
     const text = msg.content
       .filter((b) => b.type === "text")
