@@ -43,6 +43,16 @@ export async function POST(req) {
     const newKey = nano() + nano();
     await redis.set(`page:${slug}`, { data, editKey: newKey, createdAt: Date.now() });
 
+    // Owner stats + registry (best-effort)
+    try {
+      const day = new Date().toISOString().slice(0, 10);
+      await Promise.all([
+        redis.incr("stats:publishes"),
+        redis.incr(`stats:publishes:${day}`),
+        redis.zadd("registry:pages", { score: Date.now(), member: slug }),
+      ]);
+    } catch {}
+
     return Response.json({ slug, editKey: newKey });
   } catch (e) {
     console.error("publish error:", e);

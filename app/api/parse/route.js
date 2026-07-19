@@ -77,6 +77,17 @@ export async function POST(req) {
     const err = validateData(data);
     if (err) return Response.json({ error: err }, { status: 422 });
 
+    // Owner stats (best-effort — never block the user on this)
+    try {
+      const { getRedis } = await import("@/lib/redis");
+      const redis = getRedis();
+      const day = new Date().toISOString().slice(0, 10);
+      await Promise.all([
+        redis.incr("stats:parses"),
+        redis.incr(`stats:parses:${day}`),
+      ]);
+    } catch {}
+
     return Response.json({ data });
   } catch (e) {
     console.error("parse error:", e);
