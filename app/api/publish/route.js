@@ -19,9 +19,22 @@ function slugify(name) {
 
 export async function POST(req) {
   try {
+    // Rate limit: 10 publishes/hour per IP (protects Redis + slug space)
+    const { checkLimit, getClientIp } = await import("@/lib/ratelimit");
+    const rl = await checkLimit("publish-ip", getClientIp(req), 10, "1 h");
+    if (!rl.success) {
+      return Response.json({ error: "Too many publishes — try again in a bit." }, { status: 429 });
+    }
+
     const redis = getRedis();
     const body = await req.json();
     const { data, slug: existingSlug, editKey } = body || {};
+
+    // Payload size cap — a page should never be this big
+    if (JSON.stringify(data || {}).length > 200_000) {
+      return Response.json({ error: "Page data too large." }, { status: 413 });
+    }
+
     const user = await getUser(); // null when logged out or Supabase not configured
 
     const err = validateData(data);

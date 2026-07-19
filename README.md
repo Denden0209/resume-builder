@@ -91,3 +91,21 @@ The app runs fine WITHOUT this (anonymous publishing) — accounts light up when
 - Stripe + Pro tier (remove badge, custom slug, rich analytics)
 - Apple Wallet pass for the QR (requires an Apple Developer account + pass signing)
 - Rate limiting on /api/parse (Upstash Ratelimit) — do this before wide promotion
+
+## Security layer
+
+- **Rate limits** (Upstash Ratelimit, sliding window):
+  - /api/parse — anonymous: 3/hour per IP; signed-in: 10/hour per account
+  - /api/publish — 10/hour per IP
+  Limits run BEFORE any AI call; rejected requests cost $0.
+- **Input hardening**: magic-byte validation (real PDF/DOCX only), 4MB size cap,
+  PDF page cap (10 pages) to block token-bomb files, 200KB publish payload cap.
+- **Link sanitization**: only http(s) URLs render as links on published pages;
+  emails validated before mailto.
+- **Admin auth**: /admin now also accepts a Google sign-in matching OWNER_EMAIL
+  (set it in Vercel env vars) — safer than the key-in-URL method.
+- **Do these outside the code**:
+  1. Anthropic Console → Settings → Limits → set a monthly spend cap + alerts
+  2. Vercel → Firewall tab → review bot protection; Attack Challenge Mode exists if needed
+  3. Never prefix ANTHROPIC_API_KEY with NEXT_PUBLIC_; never add the Supabase service_role key
+- **Later (pre-promotion)**: Cloudflare Turnstile on anonymous uploads.

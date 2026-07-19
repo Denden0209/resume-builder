@@ -57,7 +57,15 @@ async function loadDashboard() {
 
 export default async function AdminPage({ searchParams }) {
   const adminKey = process.env.ADMIN_KEY;
-  const authorized = adminKey && searchParams?.key === adminKey;
+  const ownerEmail = process.env.OWNER_EMAIL;
+
+  // Two ways in: ?key=ADMIN_KEY, or signed in with Google as OWNER_EMAIL
+  let authorized = !!(adminKey && searchParams?.key === adminKey);
+  if (!authorized && ownerEmail) {
+    const { getUser } = await import("@/lib/supabase/server");
+    const user = await getUser();
+    authorized = !!(user?.email && user.email.toLowerCase() === ownerEmail.toLowerCase());
+  }
 
   if (!authorized) {
     return (
@@ -66,9 +74,9 @@ export default async function AdminPage({ searchParams }) {
           <p className="eyebrow" style={{ justifyContent: "center" }}>Restricted · Owner access</p>
           <h1 style={{ textTransform: "uppercase", fontSize: 30 }}>Owner dashboard</h1>
           <p style={{ color: "var(--muted)", margin: "12px 0" }}>
-            {adminKey
-              ? "Access with /admin?key=YOUR_ADMIN_KEY"
-              : "Set an ADMIN_KEY environment variable in Vercel, redeploy, then open /admin?key=YOUR_ADMIN_KEY"}
+            {adminKey || ownerEmail
+              ? "Sign in with Google as the owner account, or access with /admin?key=YOUR_ADMIN_KEY"
+              : "Set an ADMIN_KEY (and optionally OWNER_EMAIL) environment variable in Vercel, redeploy, then return here."}
           </p>
         </div>
       </main>

@@ -1,11 +1,25 @@
 import Anthropic from "@anthropic-ai/sdk";
 import mammoth from "mammoth";
 import { SYSTEM_PROMPT, PARSE_MODEL, validateData, extractJson } from "@/lib/prompt";
+import { checkLimit, getClientIp } from "@/lib/ratelimit";
+import { getUser } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
 const MAX_BYTES = 4 * 1024 * 1024; // 4MB — Vercel rejects request bodies over ~4.5MB
+const MAX_PDF_PAGES = 10; // resumes are 1-3 pages; blocks token-bomb PDFs
+
+// Best-effort PDF page count from raw bytes (0 = undetectable, allow — size cap still applies)
+function pdfPageCount(buf) {
+  try {
+    const head = buf.toString("latin1");
+    const matches = head.match(/\/Type\s*\/Page(?![s\w])/g);
+    return matches ? matches.length : 0;
+  } catch {
+    return 0;
+  }
+}
 
 export async function POST(req) {
   try {
@@ -16,21 +30,50 @@ export async function POST(req) {
       );
     }
 
+    // ---- Rate limit BEFORE any expensive work ----
+    // Signed-in users: 10/hour by account. Anonymous: 3/hour by IP.
+    const user = await getUser();
+    const rl = user
+      ? await checkLimit("parse-user", user.id, 10, "1 h")
+      : await checkLimit("parse-ip", getClientIp(req), 3, "1 h");
+    if (!rl.success) {
+      return Response.json(
+        { error: user
+            ? "You've hit the hourly parsing limit — try again in a bit."
+            : "You've hit the hourly limit for anonymous parsing — sign in with Google for a higher limit, or try again later." },
+        { status: 429 }
+      );
+    }
+
     const form = await req.formData();
     const file = form.get("file");
     if (!file || typeof file === "string") {
       return Response.json({ error: "No file uploaded" }, { status: 400 });
     }
     if (file.size > MAX_BYTES) {
-      return Response.json({ error: "File too large (max 8MB)" }, { status: 400 });
+      return Response.json({ error: "File too large (max 4MB)" }, { status: 400 });
     }
 
     const buf = Buffer.from(await file.arrayBuffer());
     const name = (file.name || "").toLowerCase();
 
+    // ---- Content checks by magic bytes, not just filename ----
+    const isPdf = buf.subarray(0, 5).toString() === "%PDF-";
+    const isZip = buf[0] === 0x50 && buf[1] === 0x4b; // "PK" — docx container
+
     // Build the user content: PDFs go to Claude natively; DOCX via mammoth; else plain text
     let userContent;
     if (name.endsWith(".pdf") || file.type === "application/pdf") {
+      if (!isPdf) {
+        return Response.json({ error: "That file isn't a valid PDF." }, { status: 400 });
+      }
+      const pages = pdfPageCount(buf);
+      if (pages > MAX_PDF_PAGES) {
+        return Response.json(
+          { error: `That PDF has ${pages} pages — resumes should be under ${MAX_PDF_PAGES}. Upload just your resume.` },
+          { status: 400 }
+        );
+      }
       userContent = [
         {
           type: "document",
@@ -43,12 +86,18 @@ export async function POST(req) {
         { type: "text", text: "Parse this resume into the JSON schema." },
       ];
     } else if (name.endsWith(".docx")) {
+      if (!isZip) {
+        return Response.json({ error: "That file isn't a valid DOCX." }, { status: 400 });
+      }
       const { value } = await mammoth.extractRawText({ buffer: buf });
       if (!value || value.trim().length < 40) {
         return Response.json({ error: "Couldn't read text from that DOCX." }, { status: 400 });
       }
       userContent = `Parse this resume into the JSON schema.\n\n<resume>\n${value.slice(0, 60000)}\n</resume>`;
     } else {
+      if (isPdf || isZip) {
+        return Response.json({ error: "Unrecognized file — rename it with the correct .pdf or .docx extension." }, { status: 400 });
+      }
       const text = buf.toString("utf8");
       if (!text || text.trim().length < 40) {
         return Response.json(

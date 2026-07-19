@@ -10,6 +10,13 @@ function emphasize(text) {
   );
 }
 
+// Only render links with safe schemes — parsed resume data is untrusted input
+function safeUrl(url) {
+  if (typeof url !== "string") return null;
+  const trimmed = url.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : null;
+}
+
 function Kpi({ k }) {
   return (
     <div className={"kpi" + (k.ai ? " ai-kpi" : "")}>
@@ -215,8 +222,8 @@ export default function Portfolio({ data, compact = false }) {
             <p className="lede">{d.lede}</p>
             <div className="hero-actions">
               <a className="btn btn-primary" href="#top-projects">View my work</a>
-              {d.linkedin ? (
-                <a className="btn btn-ghost" href={d.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+              {safeUrl(d.linkedin) ? (
+                <a className="btn btn-ghost" href={safeUrl(d.linkedin)} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
               ) : null}
             </div>
           </div>
@@ -414,8 +421,8 @@ export default function Portfolio({ data, compact = false }) {
             <h2>Let&apos;s talk.</h2>
             <p>{d.contactCta || "Reach out — I'd love to connect."}</p>
             <div className="contact-links">
-              {d.email && <a className="btn btn-primary" href={`mailto:${d.email}`}>Email me</a>}
-              {d.linkedin && <a className="btn btn-ghost" href={d.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>}
+              {d.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email) && <a className="btn btn-primary" href={`mailto:${d.email}`}>Email me</a>}
+              {safeUrl(d.linkedin) && <a className="btn btn-ghost" href={safeUrl(d.linkedin)} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>}
               {d.phone && <a className="btn btn-ghost" href={`tel:${d.phone.replace(/[^+\d]/g, "")}`}>{d.phone}</a>}
             </div>
           </div>
