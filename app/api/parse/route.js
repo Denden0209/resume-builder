@@ -31,18 +31,35 @@ export async function POST(req) {
     }
 
     // ---- Rate limit BEFORE any expensive work ----
-    // Signed-in users: 10/hour by account. Anonymous: 3/hour by IP.
+    // Anonymous: 2 parses per 24h per IP (a taste — accounts get more).
+    // Signed-in: 10/hour burst guard + monthly quota by tier below.
     const user = await getUser();
     const rl = user
       ? await checkLimit("parse-user", user.id, 10, "1 h")
-      : await checkLimit("parse-ip", getClientIp(req), 3, "1 h");
+      : await checkLimit("parse-ip", getClientIp(req), 2, "24 h");
     if (!rl.success) {
       return Response.json(
         { error: user
             ? "You've hit the hourly parsing limit — try again in a bit."
-            : "You've hit the hourly limit for anonymous parsing — sign in with Google for a higher limit, or try again later." },
+            : "You've used today's free anonymous parses — sign in with Google for a monthly allowance, or come back tomorrow." },
         { status: 429 }
       );
+    }
+
+    // ---- Monthly quota by plan tier (signed-in users) ----
+    if (user) {
+      const { getPlan, limitsFor, getParseUsage } = await import("@/lib/plan");
+      const { tier } = await getPlan(user.id);
+      const limit = limitsFor(tier).parsesPerMonth;
+      const used = await getParseUsage(user.id);
+      if (used >= limit) {
+        return Response.json(
+          { error: tier === "free"
+              ? `You've used your ${limit} free parses this month. Pro includes ${limitsFor("pro").parsesPerMonth}/month — see the Pricing page.`
+              : `You've reached your ${limit} parses this month — resets on the 1st.` },
+          { status: 402 }
+        );
+      }
     }
 
     const form = await req.formData();
@@ -135,6 +152,10 @@ export async function POST(req) {
         redis.incr("stats:parses"),
         redis.incr(`stats:parses:${day}`),
       ]);
+      if (user) {
+        const { incrParseUsage } = await import("@/lib/plan");
+        await incrParseUsage(user.id);
+      }
     } catch {}
 
     return Response.json({ data });

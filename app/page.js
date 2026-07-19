@@ -12,6 +12,7 @@ export default function Home() {
             {SITE_NAME}
           </a>
           <nav className="nav" aria-label="Main">
+            <a href="/pricing">Pricing</a>
             <AuthButton />
             <a className="cta" href="#builder">Build mine →</a>
           </nav>

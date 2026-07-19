@@ -1,5 +1,6 @@
 import { getRedis } from "@/lib/redis";
 import { SITE_NAME } from "@/lib/site";
+import AdminGrant from "@/components/AdminGrant";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: `Owner Dashboard — ${SITE_NAME}`, robots: { index: false } };
@@ -20,9 +21,10 @@ async function loadDashboard() {
     const d = new Date(Date.now() - i * 86400000);
     return d.toISOString().slice(0, 10);
   });
-  const [parses, publishes, ...daily] = await Promise.all([
+  const [parses, publishes, interest, ...daily] = await Promise.all([
     redis.get("stats:parses"),
     redis.get("stats:publishes"),
+    redis.get("stats:interest"),
     ...days.map((d) => redis.get(`stats:parses:${d}`)),
     ...days.map((d) => redis.get(`stats:publishes:${d}`)),
   ]);
@@ -50,6 +52,7 @@ async function loadDashboard() {
   return {
     parses: +(parses || 0),
     publishes: +(publishes || 0),
+    interest: +(interest || 0),
     days: days.map((d, i) => ({ day: d.slice(5), parses: +(dailyParses[i] || 0), publishes: +(dailyPublishes[i] || 0) })).reverse(),
     pages,
   };
@@ -117,6 +120,7 @@ export default async function AdminPage({ searchParams }) {
           <div className="kpi"><b>{dash.publishes}</b><span>Pages published</span></div>
           <div className="kpi"><b>{conversion}%</b><span>Parse → publish rate</span></div>
           <div className="kpi ai-kpi"><b>{dash.pages.length}</b><span>Live pages</span></div>
+          <div className="kpi"><b>{dash.interest}</b><span>Upgrade clicks</span></div>
         </div>
 
         <div className="spark-wrap" style={{ marginBottom: 40 }}>
@@ -164,6 +168,7 @@ export default async function AdminPage({ searchParams }) {
             </tbody>
           </table>
         </div>
+        <AdminGrant adminKey={searchParams?.key || ""} />
       </section>
     </main>
   );

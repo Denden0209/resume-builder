@@ -62,7 +62,22 @@ export async function POST(req) {
       return Response.json({ slug: existingSlug, editKey: rec.editKey });
     }
 
-    // New page
+    // New page — enforce page-count limit for signed-in users (republish is always free)
+    if (user) {
+      const { getPlan, limitsFor, getPageCount } = await import("@/lib/plan");
+      const { tier } = await getPlan(user.id);
+      const max = limitsFor(tier).pages;
+      const count = await getPageCount(user.id);
+      if (count >= max) {
+        return Response.json(
+          { error: tier === "free"
+              ? `Free accounts get ${max} published page. Pro includes ${limitsFor("pro").pages} — see the Pricing page, or delete a page from your dashboard first.`
+              : `You've reached your ${max}-page limit — delete one from your dashboard first.` },
+          { status: 402 }
+        );
+      }
+    }
+
     let slug = slugify(data.name);
     if (await redis.exists(`page:${slug}`)) {
       slug = `${slug}-${nano()}`;

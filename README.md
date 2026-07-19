@@ -109,3 +109,15 @@ The app runs fine WITHOUT this (anonymous publishing) — accounts light up when
   2. Vercel → Firewall tab → review bot protection; Attack Challenge Mode exists if needed
   3. Never prefix ANTHROPIC_API_KEY with NEXT_PUBLIC_; never add the Supabase service_role key
 - **Later (pre-promotion)**: Cloudflare Turnstile on anonymous uploads.
+
+## Tier infrastructure (Phase 3, step 1)
+
+- Tiers: Free (1 page, 2 parses/mo) and Pro (5 pages, 20 parses/mo) — limits in lib/plans.js
+- Regional pricing bands with geo-detection (x-vercel-ip-country): A $8/$19 · B $4/$10 · PH ₱149/₱349
+- /pricing — geo-priced page; upgrade CTAs capture founders-list interest (requires sign-in)
+- Quota enforcement: parse (monthly per account) + publish (page count) return 402 with upgrade message
+- Anonymous parsing tightened to 2 per 24h per IP so accounts are always the better deal
+- Manual grants: /admin has a grant form (paste the user's Account ID from their dashboard) —
+  for founding members paying via GCash/direct transfer before Stripe exists
+- Plan storage: plan:{userId} in Redis {tier, expiresAt}; usage counters usage:{userId}:parses:{YYYY-MM}
+- Next: Stripe Checkout + webhook writes plan:{userId}; the enforcement layer is already live
