@@ -128,7 +128,7 @@ export default function Portfolio({ data, compact = false }) {
     // Terminal typing
     const term = el.querySelector(".dash-term span.t");
     if (term) {
-      const SEQ = `> initializing profile... [ok]# ${(d.topProjects || []).length + (d.projectIndex || []).length}+ projects loaded... [ok]# systems online`;
+      const SEQ = `> initializing profile... [ok]# ${(d.topProjects || []).length + (d.projectIndex || []).length}+ career modules loaded... [ok]# systems online`;
       const render = (s) => { term.innerHTML = s.replaceAll("[ok]", '<span class="ok">✓</span>'); };
       if (reduced) render(SEQ.split("#").join("  "));
       else {
@@ -223,7 +223,7 @@ export default function Portfolio({ data, compact = false }) {
 
           <div className="dash hud" aria-label="Career metrics console">
             <div className="dash-head">
-              <span className="dash-title">{(d.name || "profile").toLowerCase().replace(/\s+/g, "_")}.pbix</span>
+              <span className="dash-title">{d.consoleTitle || (d.name || "profile").toLowerCase().replace(/\s+/g, "_") + ".pbix"}</span>
               <span className="dash-live"><i></i>Live</span>
             </div>
             <div className="dash-term" aria-hidden="true"><span className="t"></span><span className="cursor"></span></div>
@@ -264,8 +264,8 @@ export default function Portfolio({ data, compact = false }) {
         {(d.topProjects || []).length > 0 && (
           <section id="top-projects">
             <div className="sec-head reveal">
-              <span className="eyebrow">Ranked · Highest impact</span>
-              <h2>Top projects</h2>
+              <span className="eyebrow">{d.labels?.highlightsEyebrow || "Ranked · Highest impact"}</span>
+              <h2>{d.labels?.highlightsTitle || "Top projects"}</h2>
             </div>
             <div className="rank-list">
               {d.topProjects.map((p, i) => (
@@ -294,25 +294,56 @@ export default function Portfolio({ data, compact = false }) {
         {(d.projectIndex || []).length > 0 && (
           <section id="project-index">
             <div className="sec-head reveal">
-              <span className="eyebrow">Full portfolio</span>
-              <h2>Project index</h2>
+              <span className="eyebrow">{d.labels?.indexEyebrow || "Full portfolio"}</span>
+              <h2>{d.labels?.indexTitle || "Project index"}</h2>
             </div>
-            <div className="filters" role="group" aria-label="Filter projects">
-              {["all", ...orgs.map((o) => o.toLowerCase()), "data", "automation"].map((f) => (
-                <button key={f} className={"chip" + (filter === f ? " active" : "")} onClick={() => setFilter(f)}>
-                  {f === "all" ? "All" : f === "data" ? "Data & Dashboards" : f === "automation" ? "Automation & Apps" : f.charAt(0).toUpperCase() + f.slice(1)}
-                </button>
-              ))}
+            <div className="filters" role="group" aria-label="Filter items">
+              {(() => {
+                const cats = (d.labels?.categories || [
+                  { id: "data", label: "Data & Dashboards" },
+                  { id: "automation", label: "Automation & Apps" },
+                ]).filter((c) => (d.projectIndex || []).some((p) => p.category === c.id));
+                const catLabel = (id) => cats.find((c) => c.id === id)?.label || id;
+                return ["all", ...orgs.map((o) => o.toLowerCase()), ...cats.map((c) => c.id)].map((f) => (
+                  <button key={f} className={"chip" + (filter === f ? " active" : "")} onClick={() => setFilter(f)}>
+                    {f === "all" ? "All"
+                      : cats.some((c) => c.id === f) ? catLabel(f)
+                      : f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                ));
+              })()}
             </div>
             <div className="index-grid">
-              {visibleIndex.map((p, i) => (
-                <div className="index-item reveal in" key={p.title + i}>
-                  <h4>{p.title}</h4>
-                  <div className="meta">
-                    {p.org && <span className="tag org">{p.org}</span>}
-                    <span className="tag type">{p.category === "automation" ? "Automation" : "Data"}</span>
+              {visibleIndex.map((p, i) => {
+                const catLabel = (d.labels?.categories || []).find((c) => c.id === p.category)?.label
+                  || (p.category === "automation" ? "Automation" : p.category === "data" ? "Data" : p.category);
+                return (
+                  <div className="index-item reveal in" key={p.title + i}>
+                    <h4>{p.title}</h4>
+                    <div className="meta">
+                      {p.org && <span className="tag org">{p.org}</span>}
+                      {catLabel && <span className="tag type">{catLabel}</span>}
+                    </div>
+                    {p.team && <span className="team">{p.team}</span>}
                   </div>
-                  {p.team && <span className="team">{p.team}</span>}
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* CREDENTIALS */}
+        {(d.credentials || []).length > 0 && (
+          <section id="credentials">
+            <div className="sec-head reveal">
+              <span className="eyebrow">Verified</span>
+              <h2>Credentials &amp; licenses</h2>
+            </div>
+            <div className="cred-row reveal">
+              {d.credentials.map((c, i) => (
+                <div className="cred" key={i}>
+                  <b>{c.name}</b>
+                  {c.issuer && <span>{c.issuer}</span>}
                 </div>
               ))}
             </div>

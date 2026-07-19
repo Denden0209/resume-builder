@@ -658,3 +658,17 @@ details.adv summary:hover{color:var(--bright)}
 .done .hint{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);letter-spacing:.06em}
 
 .site-footer{position:relative;z-index:2;border-top:1px solid var(--line);margin-top:40px}
+
+/* ---------- Credentials ---------- */
+.cred-row{display:flex;flex-wrap:wrap;gap:12px}
+.cred{
+  border:1px solid rgba(169,214,229,.35);border-radius:11px;
+  background:linear-gradient(135deg, rgba(1,73,124,.4), rgba(1,42,74,.35));
+  padding:13px 18px;min-width:200px;transition:border-color .2s, box-shadow .2s, transform .2s;
+}
+.cred:hover{border-color:var(--bright);box-shadow:var(--glow);transform:translateY(-2px)}
+.cred b{display:block;font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;
+  letter-spacing:.03em;text-transform:uppercase;color:var(--bright);
+  text-shadow:0 0 12px rgba(169,214,229,.4)}
+.cred span{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted)}
