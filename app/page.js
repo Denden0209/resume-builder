@@ -1,4 +1,5 @@
 import Builder from "@/components/Builder";
+import AuthButton from "@/components/AuthButton";
 import { SITE_NAME, SITE_SHORT, SITE_TAGLINE } from "@/lib/site";
 
 export default function Home() {
@@ -11,6 +12,7 @@ export default function Home() {
             {SITE_NAME}
           </a>
           <nav className="nav" aria-label="Main">
+            <AuthButton />
             <a className="cta" href="#builder">Build mine →</a>
           </nav>
         </div>

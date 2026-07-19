@@ -54,3 +54,40 @@ Done. Upload a resume on your live URL and publish a page at `/u/your-name`.
 - No auth yet (Phase 2: Google login + dashboard). No payments yet (Phase 3: Stripe).
 - Consider adding rate limiting on `/api/parse` before promoting publicly
   (Vercel Firewall or Upstash Ratelimit) so strangers can't drain your API credit.
+
+## Phase 2 setup — Accounts, Dashboard, Analytics, QR
+
+The app runs fine WITHOUT this (anonymous publishing) — accounts light up when configured.
+
+### 1. Create a Supabase project (free)
+- https://supabase.com → New project → any name/region → wait ~1 min
+- Project Settings → API → copy the **Project URL** and **anon public key**
+
+### 2. Set up Google OAuth
+- https://console.cloud.google.com → create/select a project
+- APIs & Services → OAuth consent screen → External → fill app name + your email → Save
+- APIs & Services → Credentials → Create Credentials → OAuth client ID → Web application
+  - Authorized redirect URI: `https://YOUR_SUPABASE_PROJECT.supabase.co/auth/v1/callback`
+    (exact value shown in Supabase → Authentication → Providers → Google)
+- Copy the Client ID and Client Secret
+- In Supabase → Authentication → Providers → Google → enable, paste ID + Secret → Save
+- In Supabase → Authentication → URL Configuration:
+  - Site URL: `https://your-app.vercel.app`
+  - Redirect URLs: add `https://your-app.vercel.app/auth/callback`
+
+### 3. Add env vars in Vercel
+- `NEXT_PUBLIC_SUPABASE_URL` = your Project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` = your anon public key
+- Redeploy
+
+### What users get
+- **Sign in with Google** (optional — anonymous publishing still works)
+- **/dashboard** — every page they published while signed in: views (total + 7-day),
+  copy link, QR code download, edit, delete
+- Publishing while signed in auto-claims the page to their account
+- **QR codes** on the success screen and dashboard (scan with any phone camera)
+
+### Phase 3 candidates
+- Stripe + Pro tier (remove badge, custom slug, rich analytics)
+- Apple Wallet pass for the QR (requires an Apple Developer account + pass signing)
+- Rate limiting on /api/parse (Upstash Ratelimit) — do this before wide promotion

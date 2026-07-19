@@ -1,18 +1,40 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Portfolio from "./Portfolio";
+import QrCode from "./QrCode";
 
 export default function Builder() {
-  const [phase, setPhase] = useState("idle"); // idle | parsing | review | publishing | done
+  const [phase, setPhase] = useState("idle"); // idle | parsing | loading | review | publishing | done
   const [error, setError] = useState("");
   const [data, setData] = useState(null);
   const [jsonText, setJsonText] = useState("");
   const [jsonErr, setJsonErr] = useState("");
   const [result, setResult] = useState(null); // {slug, editKey, url}
+  const [editSlug, setEditSlug] = useState(null); // set when editing an existing page
   const [over, setOver] = useState(false);
   const [copied, setCopied] = useState(false);
   const inputRef = useRef(null);
+
+  // Edit mode: /?edit=slug loads an owned page straight into review
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get("edit");
+    if (!slug) return;
+    setPhase("loading");
+    fetch(`/api/page?slug=${encodeURIComponent(slug)}`)
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || "Couldn't load page");
+        setData(j.data);
+        setJsonText(JSON.stringify(j.data, null, 2));
+        setEditSlug(slug);
+        setPhase("review");
+      })
+      .catch((e) => {
+        setError(e.message);
+        setPhase("idle");
+      });
+  }, []);
 
   async function handleFile(file) {
     if (!file) return;
@@ -75,7 +97,7 @@ export default function Builder() {
       const res = await fetch("/api/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data }),
+        body: JSON.stringify(editSlug ? { data, slug: editSlug } : { data }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Publish failed");
@@ -97,6 +119,10 @@ export default function Builder() {
 
   return (
     <div className="builder" id="builder">
+      {phase === "loading" && (
+        <div className="status"><span className="spinner"></span>Loading your page…</div>
+      )}
+
       {(phase === "idle" || phase === "parsing") && (
         <>
           <div
@@ -179,15 +205,22 @@ export default function Builder() {
       {phase === "done" && result && (
         <div className="done hud">
           <span className="eyebrow" style={{ justifyContent: "center" }}><span className="blink"></span>Deployed</span>
-          <h2 style={{ textTransform: "uppercase" }}>Your site is live</h2>
+          <h2 style={{ textTransform: "uppercase" }}>{editSlug ? "Your site is updated" : "Your site is live"}</h2>
           <a className="url" href={result.url} target="_blank" rel="noopener noreferrer">{result.url}</a>
           <div className="publish-row" style={{ justifyContent: "center" }}>
             <button className="btn btn-primary" onClick={copyUrl}>{copied ? "Copied ✓" : "Copy link"}</button>
             <a className="btn btn-ghost" href={result.url} target="_blank" rel="noopener noreferrer">Open site ↗</a>
-            <button className="btn btn-ghost" onClick={() => { setPhase("idle"); setData(null); setResult(null); }}>Build another</button>
+            <button className="btn btn-ghost" onClick={() => { setPhase("idle"); setData(null); setResult(null); setEditSlug(null); window.history.replaceState({}, "", "/"); }}>Build another</button>
+          </div>
+          <div style={{ marginTop: 20 }}>
+            <QrCode url={result.url} size={190} />
+            <p className="hint" style={{ marginTop: 8 }}>
+              Scan with any phone camera → opens your portfolio. Screenshot it for your resume or business card.
+            </p>
           </div>
           <p className="hint" style={{ marginTop: 14 }}>
             Save this edit key to update your page later: <b style={{ color: "var(--bright)" }}>{result.editKey}</b>
+            <br />Or sign in with Google before publishing next time — your pages get saved to a dashboard automatically.
           </p>
         </div>
       )}

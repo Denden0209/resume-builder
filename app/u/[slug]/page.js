@@ -5,10 +5,21 @@ import { SITE_NAME } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-async function getPage(slug) {
+async function getPage(slug, track = false) {
   try {
     const redis = getRedis();
-    return await redis.get(`page:${slug}`);
+    const rec = await redis.get(`page:${slug}`);
+    if (track && rec?.data) {
+      // View tracking — best-effort, never blocks render
+      try {
+        const day = new Date().toISOString().slice(0, 10);
+        await Promise.all([
+          redis.incr(`views:${slug}`),
+          redis.incr(`views:${slug}:${day}`),
+        ]);
+      } catch {}
+    }
+    return rec;
   } catch {
     return null;
   }
@@ -29,7 +40,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function UserPage({ params }) {
-  const rec = await getPage(params.slug);
+  const rec = await getPage(params.slug, true);
   if (!rec?.data) notFound();
   const d = rec.data;
 
