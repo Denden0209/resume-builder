@@ -27,7 +27,6 @@ export default function AuthButton() {
     return (
       <button
         className="cta"
-        style={{ border: "none", cursor: "pointer", font: "inherit" }}
         onClick={() => {
           const supabase = createClient();
           supabase.auth.signInWithOAuth({
@@ -36,7 +35,7 @@ export default function AuthButton() {
           });
         }}
       >
-        Sign in with Google
+        <span className="gmark">G</span>Sign in with Google
       </button>
     );
   }
@@ -45,7 +44,7 @@ export default function AuthButton() {
     <>
       <a href="/dashboard">My Pages</a>
       <button
-        style={{ background: "none", border: "none", cursor: "pointer", font: "inherit", color: "var(--muted)", padding: "8px 13px", fontFamily: "IBM Plex Mono, monospace", fontSize: 12, letterSpacing: ".08em", textTransform: "uppercase" }}
+        className="navbtn"
         onClick={async () => {
           const supabase = createClient();
           await supabase.auth.signOut();

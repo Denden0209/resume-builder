@@ -14,6 +14,9 @@ export default function Builder() {
   const [editSlug, setEditSlug] = useState(null); // set when editing an existing page
   const [over, setOver] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [scratch, setScratch] = useState(false);
+  const [scratchText, setScratchText] = useState("");
+  const [rewriting, setRewriting] = useState(false);
   const inputRef = useRef(null);
 
   // Edit mode: /?edit=slug loads an owned page straight into review
@@ -36,13 +39,14 @@ export default function Builder() {
       });
   }, []);
 
-  async function handleFile(file) {
+  async function handleFile(file, mode) {
     if (!file) return;
     setError("");
     setPhase("parsing");
     try {
       const fd = new FormData();
       fd.append("file", file);
+      if (mode) fd.append("mode", mode);
       const res = await fetch("/api/parse", { method: "POST", body: fd });
       const raw = await res.text();
       let json;
@@ -87,6 +91,35 @@ export default function Builder() {
       setJsonErr("");
     } catch {
       setJsonErr("Invalid JSON — fix the syntax and click Apply again.");
+    }
+  }
+
+  function submitScratch() {
+    if (scratchText.trim().length < 120) {
+      setError("Tell us a bit more — at least a few sentences about your roles and wins.");
+      return;
+    }
+    const blob = new File([scratchText], "career-story.txt", { type: "text/plain" });
+    handleFile(blob, "scratch");
+  }
+
+  async function rewrite() {
+    setRewriting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/rewrite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Rewrite failed");
+      setData(json.data);
+      setJsonText(JSON.stringify(json.data, null, 2));
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setRewriting(false);
     }
   }
 
@@ -145,9 +178,33 @@ export default function Builder() {
             </span>
           </div>
           {phase === "parsing" && (
-            <div className="status"><span className="spinner"></span>Parsing document → detecting KPIs → ranking projects → building your page…</div>
+            <div className="status"><span className="spinner"></span>Parsing → detecting KPIs → ranking highlights → building your page…</div>
           )}
-          {error && <div className="status"><span className="err">✕ {error}</span></div>}
+          {phase === "idle" && !scratch && (
+            <p style={{ textAlign: "center", marginTop: 14 }}>
+              <button className="chip" onClick={() => { setScratch(true); setError(""); }}>
+                ✨ No resume yet? Build from scratch (Pro)
+              </button>
+            </p>
+          )}
+          {phase === "idle" && scratch && (
+            <div className="review" style={{ marginTop: 18 }}>
+              <div className="field wide">
+                <label>Tell us your career story — the AI turns it into a full portfolio</label>
+                <textarea
+                  style={{ minHeight: 200 }}
+                  value={scratchText}
+                  onChange={(e) => setScratchText(e.target.value)}
+                  placeholder={"Write naturally, like you're telling a friend:\n\n• Your name, where you're based, how to reach you\n• Each job: company, title, roughly when, and what you accomplished (numbers help — team size, money saved, people served)\n• Certifications, education, skills\n• What kind of role you're looking for"}
+                />
+              </div>
+              <div className="publish-row">
+                <button className="btn btn-primary" onClick={submitScratch}>Generate my portfolio →</button>
+                <button className="btn btn-ghost" onClick={() => setScratch(false)}>← Back to upload</button>
+              </div>
+            </div>
+          )}
+          {error && <div className="status"><span className="err">✕ {error}</span> {/(Pro|Pricing)/.test(error) && <a href="/pricing">See Pricing →</a>}</div>}
         </>
       )}
 
@@ -157,6 +214,10 @@ export default function Builder() {
             <h2>Review your page</h2>
             <div className="publish-row">
               <button className="btn btn-ghost" onClick={() => { setPhase("idle"); setData(null); }}>← Start over</button>
+              <button className="btn btn-ghost" onClick={rewrite} disabled={rewriting}
+                title="Pro: AI rewrites your bullets into impact statements">
+                {rewriting ? "Rewriting…" : "✨ AI Bullet Rewriter"}
+              </button>
               <button className="btn btn-primary" onClick={publish} disabled={phase === "publishing"}>
                 {phase === "publishing" ? "Publishing…" : "Publish my site →"}
               </button>

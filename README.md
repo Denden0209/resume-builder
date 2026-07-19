@@ -121,3 +121,24 @@ The app runs fine WITHOUT this (anonymous publishing) — accounts light up when
   for founding members paying via GCash/direct transfer before Stripe exists
 - Plan storage: plan:{userId} in Redis {tier, expiresAt}; usage counters usage:{userId}:parses:{YYYY-MM}
 - Next: Stripe Checkout + webhook writes plan:{userId}; the enforcement layer is already live
+
+## Stripe setup (Phase 3)
+
+1. stripe.com → create account → toggle **Test mode** while setting up
+2. Products → Add product:
+   - "Pro Monthly" — recurring $8/month → copy its price ID (price_...)
+   - "Pro 90-Day Pass" — one-time $19 → copy its price ID
+   - Optional regional prices: duplicates at $4/$10 (band B) and ₱149/₱349 or $2.50/$6 (band C)
+3. Vercel env vars:
+   - STRIPE_SECRET_KEY (Developers → API keys → Secret key)
+   - STRIPE_WEBHOOK_SECRET (next step)
+   - STRIPE_PRICE_MONTHLY, STRIPE_PRICE_PASS (+ optional _B/_C variants)
+4. Webhook: Developers → Webhooks → Add endpoint
+   - URL: https://your-app.vercel.app/api/stripe-webhook
+   - Events: checkout.session.completed, customer.subscription.deleted
+   - Copy the Signing secret → STRIPE_WEBHOOK_SECRET
+5. Redeploy. The pricing page automatically switches from founders-list mode to live checkout.
+6. Test with card 4242 4242 4242 4242 in Test mode, then flip to Live keys.
+
+Pro features shipped: AI Bullet Rewriter, build-from-scratch (no resume needed),
+PDF + Word resume export (CV-style template), 5 pages, 20 parses/mo.

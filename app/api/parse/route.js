@@ -64,6 +64,20 @@ export async function POST(req) {
 
     const form = await req.formData();
     const file = form.get("file");
+    const mode = form.get("mode"); // "scratch" = typed-in career story (Pro feature)
+
+    if (mode === "scratch") {
+      if (!user) return Response.json({ error: "Sign in to build from scratch." }, { status: 401 });
+      const { getPlan } = await import("@/lib/plan");
+      const { tier } = await getPlan(user.id);
+      if (tier !== "pro") {
+        return Response.json(
+          { error: "Building without a resume is a Pro feature — see the Pricing page." },
+          { status: 402 }
+        );
+      }
+    }
+
     if (!file || typeof file === "string") {
       return Response.json({ error: "No file uploaded" }, { status: 400 });
     }

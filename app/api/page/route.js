@@ -1,6 +1,7 @@
 import { getRedis } from "@/lib/redis";
 import { getUser } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 // Owner-only fetch of a page's data for editing

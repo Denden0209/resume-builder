@@ -3,6 +3,7 @@ import { getUser, supabaseConfigured } from "@/lib/supabase/server";
 import { getPlan, limitsFor, getParseUsage, getPageCount } from "@/lib/plan";
 import { SITE_NAME, SITE_SHORT } from "@/lib/site";
 import AuthButton from "@/components/AuthButton";
+import AdminLink from "@/components/AdminLink";
 import MyPages from "@/components/MyPages";
 
 async function PlanBar({ userId }) {
@@ -71,6 +72,7 @@ export default async function DashboardPage() {
           <nav className="nav" aria-label="Main">
             <a href="/">Builder</a>
             <a href="/pricing">Pricing</a>
+            <AdminLink />
             <AuthButton />
           </nav>
         </div>

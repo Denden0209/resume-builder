@@ -2,7 +2,9 @@ import { headers } from "next/headers";
 import { pricesFor } from "@/lib/plans";
 import { SITE_NAME, SITE_SHORT } from "@/lib/site";
 import AuthButton from "@/components/AuthButton";
+import AdminLink from "@/components/AdminLink";
 import UpgradeCta from "@/components/UpgradeCta";
+import { stripeConfigured } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: `Pricing — ${SITE_NAME}` };
@@ -18,6 +20,7 @@ function Feature({ children, dim = false }) {
 
 export default function PricingPage() {
   const cc = headers().get("x-vercel-ip-country") || "US";
+  const live = stripeConfigured();
   const p = pricesFor(cc);
 
   const card = {
@@ -38,6 +41,7 @@ export default function PricingPage() {
           <nav className="nav" aria-label="Main">
             <a href="/">Builder</a>
             <a href="/dashboard">My Pages</a>
+            <AdminLink />
             <AuthButton />
           </nav>
         </div>
@@ -87,7 +91,8 @@ export default function PricingPage() {
               <Feature>QR code download (PNG)</Feature>
               <Feature>Priority AI parsing (highest quality model)</Feature>
             </ul>
-            <UpgradeCta plan="pro" />
+            <UpgradeCta plan="pro" live={live} product="monthly" label={live ? "Get Pro monthly →" : "Get Pro →"} />
+            {live && <UpgradeCta plan="pro" live={live} product="pass" ghost label="Get the 90-day pass →" />}
           </div>
 
           {/* CAREER+ */}
@@ -102,12 +107,14 @@ export default function PricingPage() {
               <Feature>Multiple template themes</Feature>
               <Feature>Apple Wallet QR pass</Feature>
             </ul>
-            <UpgradeCta plan="career" label="Join the waitlist" />
+            <UpgradeCta plan="career" label="Join the waitlist" live={false} />
           </div>
         </div>
 
         <p style={{ textAlign: "center", fontFamily: "IBM Plex Mono, monospace", fontSize: 10.5, letterSpacing: ".06em", color: "var(--muted)", marginTop: 28, padding: "0 24px" }}>
-          Payments are launching soon — clicking upgrade adds you to the founders list for early access and launch pricing.
+          {live
+            ? "Secure checkout by Stripe. Cancel anytime from your dashboard. In the Philippines? GCash virtual cards work at checkout."
+            : "Payments are launching soon — clicking upgrade adds you to the founders list for early access and launch pricing."}
         </p>
       </section>
     </main>

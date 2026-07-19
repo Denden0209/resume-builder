@@ -31,6 +31,31 @@ export default function MyPages({ pages: initial }) {
     }
   }
 
+  async function exportFile(slug, format) {
+    setBusy(slug + format);
+    try {
+      const res = await fetch("/api/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, format }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Export failed");
+      }
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${slug}-resume.${format}`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   function copy(slug) {
     navigator.clipboard.writeText(urlFor(slug)).then(() => {
       setCopied(slug);
@@ -75,6 +100,8 @@ export default function MyPages({ pages: initial }) {
               <button className="chip" onClick={() => copy(p.slug)}>{copied === p.slug ? "Copied ✓" : "Copy link"}</button>
               <button className="chip" onClick={() => setQrFor(qrFor === p.slug ? null : p.slug)}>QR code</button>
               <a className="chip" href={`/?edit=${p.slug}`} style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Edit</a>
+              <button className="chip" onClick={() => exportFile(p.slug, "pdf")} disabled={busy === p.slug + "pdf"} title="Pro: export as PDF resume">{busy === p.slug + "pdf" ? "…" : "PDF ↓"}</button>
+              <button className="chip" onClick={() => exportFile(p.slug, "docx")} disabled={busy === p.slug + "docx"} title="Pro: export as Word resume">{busy === p.slug + "docx" ? "…" : "Word ↓"}</button>
               <button className="chip" onClick={() => remove(p.slug)} disabled={busy === p.slug}
                 style={{ borderColor: "rgba(252,165,165,.35)", color: "#FCA5A5" }}>
                 {busy === p.slug ? "…" : "Delete"}
