@@ -5,6 +5,7 @@ import { createClient, supabaseConfigured } from "@/lib/supabase/client";
 
 export default function UpgradeCta({ plan, label, live = false, product = "monthly", ghost = false }) {
   const [state, setState] = useState("idle"); // idle | busy | done | error
+  const [errMsg, setErrMsg] = useState("");
 
   async function click() {
     if (state === "done") return;
@@ -29,8 +30,8 @@ export default function UpgradeCta({ plan, label, live = false, product = "month
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ product }),
         });
-        const j = await res.json();
-        if (!res.ok || !j.url) throw new Error(j.error || "Checkout failed");
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j.url) throw new Error(j.error || `Checkout failed (${res.status})`);
         window.location.href = j.url;
         return;
       }
@@ -41,12 +42,14 @@ export default function UpgradeCta({ plan, label, live = false, product = "month
       });
       if (!res.ok) throw new Error();
       setState("done");
-    } catch {
+    } catch (e) {
+      setErrMsg(e.message || "Something went wrong");
       setState("error");
     }
   }
 
   return (
+    <>
     <button
       className={ghost ? "btn btn-ghost" : "btn btn-primary"}
       onClick={click}
@@ -58,5 +61,9 @@ export default function UpgradeCta({ plan, label, live = false, product = "month
         : state === "error" ? "Try again"
         : (label || "Get Pro →")}
     </button>
+    {state === "error" && errMsg && (
+      <p style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 10.5, color: "#FCA5A5", marginTop: 8, textAlign: "center" }}>✕ {errMsg}</p>
+    )}
+    </>
   );
 }
