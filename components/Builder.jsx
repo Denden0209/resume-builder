@@ -17,6 +17,10 @@ export default function Builder() {
   const [scratch, setScratch] = useState(false);
   const [scratchText, setScratchText] = useState("");
   const [rewriting, setRewriting] = useState(false);
+  const [showJob, setShowJob] = useState(false);
+  const [jobText, setJobText] = useState("");
+  const [tailoring, setTailoring] = useState(false);
+  const [tailoredFor, setTailoredFor] = useState("");
   const inputRef = useRef(null);
 
   // Edit mode: /?edit=slug loads an owned page straight into review
@@ -123,6 +127,32 @@ export default function Builder() {
     }
   }
 
+  async function tailor() {
+    if (jobText.trim().length < 80) {
+      setError("Paste the full job description first.");
+      return;
+    }
+    setTailoring(true);
+    setError("");
+    try {
+      const res = await fetch("/api/tailor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data, jobDescription: jobText }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Tailoring failed");
+      setData(json.data);
+      setJsonText(JSON.stringify(json.data, null, 2));
+      setTailoredFor(json.data.tailoredFor || "your target role");
+      setShowJob(false);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setTailoring(false);
+    }
+  }
+
   async function publish() {
     setPhase("publishing");
     setError("");
@@ -218,12 +248,43 @@ export default function Builder() {
                 title="Pro: AI rewrites your bullets into impact statements">
                 {rewriting ? "Rewriting…" : "✨ AI Bullet Rewriter"}
               </button>
+              <button className="btn btn-ghost" onClick={() => { setShowJob(!showJob); setError(""); }}
+                title="Pro: tailor this resume to a specific job posting">
+                🎯 Tailor to a Job
+              </button>
               <button className="btn btn-primary" onClick={publish} disabled={phase === "publishing"}>
                 {phase === "publishing" ? "Publishing…" : "Publish my site →"}
               </button>
             </div>
           </div>
 
+          {tailoredFor && (
+            <div className="status" style={{ borderColor: "rgba(110,231,183,.4)" }}>
+              <span className="ok">✓ Tailored for: {tailoredFor}</span> — review the highlighted alignment below, then publish or export.
+            </div>
+          )}
+          {showJob && (
+            <div className="review" style={{ marginTop: 4, marginBottom: 18 }}>
+              <div className="field wide">
+                <label>Paste the full job description — AI aligns your resume to its keywords (ATS-ready)</label>
+                <textarea
+                  style={{ minHeight: 170 }}
+                  value={jobText}
+                  onChange={(e) => setJobText(e.target.value)}
+                  placeholder="Paste the entire job posting here — responsibilities, requirements, and preferred qualifications. The more complete, the better the keyword alignment."
+                />
+              </div>
+              <div className="publish-row">
+                <button className="btn btn-primary" onClick={tailor} disabled={tailoring}>
+                  {tailoring ? "Tailoring to the role…" : "Generate tailored version →"}
+                </button>
+                <button className="btn btn-ghost" onClick={() => setShowJob(false)}>Cancel</button>
+              </div>
+              <p className="hint" style={{ marginTop: 8 }}>
+                Your real experience only — the AI surfaces and rephrases what you have to match the job, never invents qualifications.
+              </p>
+            </div>
+          )}
           <div className="fields">
             <div className="field"><label>Name</label>
               <input value={data.name || ""} onChange={(e) => updateField("name", e.target.value)} /></div>
