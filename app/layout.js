@@ -1,6 +1,12 @@
 import "./globals.css";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata = {
   title: SITE_NAME,
   description: SITE_TAGLINE,

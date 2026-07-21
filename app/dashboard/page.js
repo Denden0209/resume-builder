@@ -3,6 +3,7 @@ import { getUser, supabaseConfigured } from "@/lib/supabase/server";
 import { getPlan, limitsFor, getParseUsage, getPageCount } from "@/lib/plan";
 import { SITE_NAME, SITE_SHORT } from "@/lib/site";
 import AuthButton from "@/components/AuthButton";
+import MobileNav from "@/components/MobileNav";
 import AdminLink from "@/components/AdminLink";
 import MyPages from "@/components/MyPages";
 
@@ -69,12 +70,12 @@ export default async function DashboardPage() {
       <header className="topbar">
         <div className="topbar-inner">
           <a className="brand" href="/"><span className="brand-mark">{SITE_SHORT}</span>{SITE_NAME}</a>
-          <nav className="nav" aria-label="Main">
+          <MobileNav>
             <a href="/">Builder</a>
             <a href="/pricing">Pricing</a>
             <AdminLink />
             <AuthButton />
-          </nav>
+          </MobileNav>
         </div>
       </header>
 

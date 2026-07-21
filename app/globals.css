@@ -93,7 +93,37 @@ a:hover{text-decoration:underline}
 .nav a:hover,.nav .navbtn:hover{color:var(--bright);background:rgba(97,165,194,.08);text-decoration:none;text-shadow:0 0 12px rgba(169,214,229,.6)}
 .nav .cta{background:linear-gradient(135deg,var(--cerulean),var(--air));color:#fff;box-shadow:var(--glow)}
 .nav .cta:hover{background:linear-gradient(135deg,var(--air),var(--accent))}
-@media(max-width:820px){.nav a:not(.cta){display:none}}
+/* hamburger toggle — hidden on desktop */
+.nav-toggle{display:none;background:rgba(1,42,74,.5);border:1px solid var(--line-strong);
+  border-radius:9px;width:42px;height:42px;cursor:pointer;padding:0;
+  align-items:center;justify-content:center;flex-direction:column;gap:4px}
+.nav-toggle span{display:block;width:18px;height:2px;background:var(--bright);border-radius:2px;
+  transition:transform .25s ease,opacity .2s ease}
+.nav-toggle[aria-expanded="true"] span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.nav-toggle[aria-expanded="true"] span:nth-child(2){opacity:0}
+.nav-toggle[aria-expanded="true"] span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+
+@media(max-width:820px){
+  .nav-toggle{display:inline-flex}
+  .topbar-inner{position:relative}
+  /* full dropdown panel */
+  .nav{
+    position:absolute;top:calc(100% + 10px);right:0;left:0;
+    flex-direction:column;align-items:stretch;gap:6px;
+    background:rgba(1,20,38,.97);backdrop-filter:blur(16px);
+    border:1px solid var(--line-strong);border-radius:14px;
+    padding:12px;box-shadow:0 24px 60px rgba(1,14,26,.6);
+    max-height:0;overflow:hidden;opacity:0;pointer-events:none;
+    transition:max-height .3s ease,opacity .25s ease,padding .3s ease;
+  }
+  .nav.open{max-height:80vh;opacity:1;pointer-events:auto;padding:12px}
+  .nav a,.nav .navbtn,.nav button.cta{
+    width:100%;justify-content:center;text-align:center;
+    padding:14px 16px;font-size:13px;border-radius:10px;
+  }
+  .nav a:not(.cta),.nav .navbtn{background:rgba(1,42,74,.5);border:1px solid var(--line)}
+  .nav button.cta{height:auto}
+}
 
 /* ---------- HUD helpers ---------- */
 .hud{position:relative}
@@ -689,3 +719,69 @@ details.adv summary:hover{color:var(--bright)}
 .nav button.cta:hover{background:linear-gradient(135deg,var(--air),var(--accent));transform:translateY(-1px);box-shadow:0 0 22px rgba(97,165,194,.6)}
 .nav .gmark{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;
   background:#fff;color:#012A4A;font-weight:700;font-size:11px;font-family:'IBM Plex Sans',sans-serif;flex-shrink:0}
+
+/* ============ MOBILE RESPONSIVE PASS ============ */
+@media(max-width:640px){
+  section{padding:44px 18px}
+  .hero{padding:40px 18px 30px;gap:34px}
+  h1{font-size:clamp(30px,8vw,40px)}
+  .hero p.lede{font-size:15.5px}
+  .hero-actions{gap:10px}
+  .hero-actions .btn{flex:1;min-width:0;padding:13px 16px;font-size:13.5px}
+
+  /* console fits small screens; kill tilt jitter */
+  .dash{transform:none!important}
+  .dash-body{padding:15px}
+  .kpis{gap:9px}
+  .kpi b,.kpi-hero b{font-size:22px}
+  .kpi-hero b{font-size:32px}
+
+  /* ranked project cards stack cleanly */
+  .rank-inner{grid-template-columns:1fr;gap:10px;padding:20px 18px}
+  .rank-num{font-size:34px}
+  .rank-body h3{font-size:18px}
+  .impact{gap:10px;font-size:11px}
+
+  /* single-column grids */
+  .index-grid{grid-template-columns:1fr!important}
+  .landing-steps{grid-template-columns:1fr;gap:10px}
+
+  /* headings + section titles */
+  h2{font-size:clamp(22px,6vw,28px)}
+
+  /* forms full width, comfortable tap targets */
+  .fields{grid-template-columns:1fr!important;gap:10px}
+  .field input,.field textarea{font-size:16px;padding:12px 14px} /* 16px stops iOS zoom */
+  .drop{padding:34px 18px}
+  .btn{padding:14px 20px} /* min 44px tap height */
+  .chip{padding:10px 15px} /* larger tap target */
+  .publish-row{gap:8px}
+  .publish-row .btn{flex:1;min-width:calc(50% - 4px)}
+
+  /* review preview shorter on phones */
+  .preview-scale{max-height:420px}
+
+  /* pricing cards stack, comfortable */
+  .done{padding:22px 18px}
+  .done .url{font-size:12.5px;padding:10px 14px}
+
+  /* footer stacks */
+  footer,.site-footer .wrap{flex-direction:column;gap:6px;text-align:center;align-items:center}
+}
+
+@media(max-width:640px){
+  /* admin + dashboard tables scroll horizontally with a hint */
+  table{min-width:560px}
+}
+
+/* tablet tweaks */
+@media(min-width:641px) and (max-width:900px){
+  .rank-inner{grid-template-columns:64px 1fr}
+  .fields{grid-template-columns:1fr 1fr}
+}
+
+/* larger default tap targets on any touch device */
+@media(hover:none){
+  .chip{min-height:38px}
+  .nav a,.nav .navbtn{min-height:40px}
+}

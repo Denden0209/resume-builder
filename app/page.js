@@ -1,5 +1,6 @@
 import Builder from "@/components/Builder";
 import AuthButton from "@/components/AuthButton";
+import MobileNav from "@/components/MobileNav";
 import AdminLink from "@/components/AdminLink";
 import { SITE_NAME, SITE_SHORT, SITE_TAGLINE } from "@/lib/site";
 
@@ -12,12 +13,12 @@ export default function Home() {
             <span className="brand-mark">{SITE_SHORT}</span>
             {SITE_NAME}
           </a>
-          <nav className="nav" aria-label="Main">
+          <MobileNav>
             <a href="/pricing">Pricing</a>
             <AdminLink />
             <AuthButton />
             <a className="cta" href="#builder">Build mine →</a>
-          </nav>
+          </MobileNav>
         </div>
       </header>
 

@@ -1,5 +1,6 @@
 import { getRedis } from "@/lib/redis";
 import { SITE_NAME } from "@/lib/site";
+import MobileNav from "@/components/MobileNav";
 import AdminGrant from "@/components/AdminGrant";
 
 export const dynamic = "force-dynamic";
@@ -106,7 +107,7 @@ export default async function AdminPage({ searchParams }) {
       <header className="topbar">
         <div className="topbar-inner">
           <a className="brand" href="/"><span className="brand-mark">⌘</span>Owner Dashboard</a>
-          <nav className="nav"><a className="cta" href="/">← Site</a></nav>
+          <MobileNav><a className="cta" href="/">← Site</a></MobileNav>
         </div>
       </header>
 
