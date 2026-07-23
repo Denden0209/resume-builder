@@ -1,4 +1,5 @@
 import Builder from "@/components/Builder";
+import SiteFooter from "@/components/SiteFooter";
 import { getUser } from "@/lib/supabase/server";
 import AuthButton from "@/components/AuthButton";
 import MobileNav from "@/components/MobileNav";
@@ -45,12 +46,7 @@ export default async function Home() {
 
       <Builder isOwner={isOwner} />
 
-      <footer className="site-footer">
-        <div className="wrap" style={{ display: "flex", justifyContent: "space-between", padding: "24px", fontFamily: "IBM Plex Mono, monospace", fontSize: 11, color: "var(--muted)", letterSpacing: ".08em", flexWrap: "wrap", gap: 10 }}>
-          <span>© {new Date().getFullYear()} {SITE_NAME}</span>
-          <span>Built with AI</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

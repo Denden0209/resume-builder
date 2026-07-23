@@ -4,6 +4,7 @@ import { SITE_NAME, SITE_SHORT } from "@/lib/site";
 import AuthButton from "@/components/AuthButton";
 import MobileNav from "@/components/MobileNav";
 import AdminLink from "@/components/AdminLink";
+import SiteFooter from "@/components/SiteFooter";
 import UpgradeCta from "@/components/UpgradeCta";
 import { stripeConfigured } from "@/lib/stripe";
 
@@ -119,6 +120,7 @@ export default function PricingPage({ searchParams }) {
             : "Payments are launching soon — clicking upgrade adds you to the founders list for early access and launch pricing."}
         </p>
       </section>
+          <SiteFooter />
     </main>
   );
 }

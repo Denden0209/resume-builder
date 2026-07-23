@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Portfolio from "./Portfolio";
 import QrCode from "./QrCode";
+import Turnstile from "./Turnstile";
 
 export default function Builder({ isOwner = false }) {
   const [phase, setPhase] = useState("idle"); // idle | parsing | loading | review | publishing | done
@@ -14,6 +15,7 @@ export default function Builder({ isOwner = false }) {
   const [editSlug, setEditSlug] = useState(null); // set when editing an existing page
   const [over, setOver] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [tsToken, setTsToken] = useState("");
   const [scratch, setScratch] = useState(false);
   const [scratchText, setScratchText] = useState("");
   const [rewriting, setRewriting] = useState(false);
@@ -51,6 +53,7 @@ export default function Builder({ isOwner = false }) {
       const fd = new FormData();
       fd.append("file", file);
       if (mode) fd.append("mode", mode);
+      if (tsToken) fd.append("turnstileToken", tsToken);
       const res = await fetch("/api/parse", { method: "POST", body: fd });
       const raw = await res.text();
       let json;
@@ -211,6 +214,7 @@ export default function Builder({ isOwner = false }) {
           {phase === "parsing" && (
             <div className="status"><span className="spinner"></span>Parsing → detecting KPIs → ranking highlights → building your page…</div>
           )}
+          {phase === "idle" && <Turnstile onToken={setTsToken} />}
           {phase === "idle" && !scratch && (
             <p style={{ textAlign: "center", marginTop: 14 }}>
               <button className="chip" onClick={() => { setScratch(true); setError(""); }}>

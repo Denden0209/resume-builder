@@ -5,6 +5,7 @@ import { SITE_NAME, SITE_SHORT } from "@/lib/site";
 import AuthButton from "@/components/AuthButton";
 import MobileNav from "@/components/MobileNav";
 import AdminLink from "@/components/AdminLink";
+import SiteFooter from "@/components/SiteFooter";
 import MyPages from "@/components/MyPages";
 
 async function PlanBar({ userId }) {
@@ -109,6 +110,7 @@ export default async function DashboardPage() {
           </p>
         </section>
       )}
+          <SiteFooter />
     </main>
   );
 }

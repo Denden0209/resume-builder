@@ -159,3 +159,26 @@ PDF + Word resume export (CV-style template), 5 pages, 20 parses/mo.
 Stripe Dashboard → Settings → Notifications (or Business settings → Emails) →
 enable email on successful payments → sent to your Stripe account email.
 For a different inbox, add it under Team/notifications.
+
+## Legal pages
+- /privacy and /terms — edit company details in ONE place: lib/legal.js
+  (company name, product name, domain, support email, jurisdiction, effective date)
+- Linked from the footer on every page (components/SiteFooter.jsx)
+- Written to match actual practice: uploaded resumes are NOT retained; only published
+  pages are stored; Google auth via Supabase; payments via Stripe.
+- Have a lawyer review before scaling — these are a solid honest baseline, not legal advice.
+
+## Cloudflare Turnstile (bot protection) — setup
+The app runs fine without it; protection activates once these env vars exist.
+
+1. dash.cloudflare.com → **Turnstile** (left sidebar) → **Add widget**
+2. Widget name: Personal Site · Domain: personalsite.io (add www too if used)
+3. Widget mode: **Managed** (invisible for most humans)
+4. Create → copy the **Site Key** and **Secret Key**
+5. Vercel → Settings → Environment Variables:
+   - `NEXT_PUBLIC_TURNSTILE_SITE_KEY` = site key
+   - `TURNSTILE_SECRET_KEY` = secret key
+6. Redeploy
+
+Behavior: anonymous uploads must pass the challenge before any AI call is made
+(rejected = $0 cost). Signed-in users skip it. Verification fails closed.

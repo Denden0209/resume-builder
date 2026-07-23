@@ -63,6 +63,21 @@ export async function POST(req) {
     }
 
     const form = await req.formData();
+
+    // ---- Bot verification for anonymous users (Turnstile) ----
+    if (!user) {
+      const { verifyTurnstile, turnstileConfigured } = await import("@/lib/turnstile");
+      if (turnstileConfigured()) {
+        const ok = await verifyTurnstile(form.get("turnstileToken"), getClientIp(req));
+        if (!ok) {
+          return Response.json(
+            { error: "Bot check failed — please complete the verification and try again." },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
     const file = form.get("file");
     const mode = form.get("mode"); // "scratch" = typed-in career story (Pro feature)
 
