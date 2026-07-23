@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Portfolio from "./Portfolio";
 import QrCode from "./QrCode";
 
-export default function Builder() {
+export default function Builder({ isOwner = false }) {
   const [phase, setPhase] = useState("idle"); // idle | parsing | loading | review | publishing | done
   const [error, setError] = useState("");
   const [data, setData] = useState(null);
@@ -153,14 +153,15 @@ export default function Builder() {
     }
   }
 
-  async function publish() {
+  async function publish(asNew = false) {
     setPhase("publishing");
     setError("");
     try {
+      const body = (editSlug && !asNew) ? { data, slug: editSlug } : { data };
       const res = await fetch("/api/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editSlug ? { data, slug: editSlug } : { data }),
+        body: JSON.stringify(body),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Publish failed");
@@ -252,9 +253,22 @@ export default function Builder() {
                 title="Pro: tailor this resume to a specific job posting">
                 🎯 Tailor to a Job
               </button>
-              <button className="btn btn-primary" onClick={publish} disabled={phase === "publishing"}>
-                {phase === "publishing" ? "Publishing…" : "Publish my site →"}
-              </button>
+              {editSlug ? (
+                <>
+                  <button className="btn btn-primary" onClick={() => publish(false)} disabled={phase === "publishing"}
+                    title="Overwrite the existing page — same link">
+                    {phase === "publishing" ? "…" : "Update this page"}
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => publish(true)} disabled={phase === "publishing"}
+                    title="Create a separate page at a new link — great for a tailored version">
+                    {phase === "publishing" ? "…" : "Publish as new page →"}
+                  </button>
+                </>
+              ) : (
+                <button className="btn btn-primary" onClick={() => publish(false)} disabled={phase === "publishing"}>
+                  {phase === "publishing" ? "Publishing…" : "Publish my site →"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -304,14 +318,16 @@ export default function Builder() {
               <input value={data.linkedin || ""} onChange={(e) => updateField("linkedin", e.target.value)} /></div>
           </div>
 
-          <details className="adv">
-            <summary>Advanced: edit everything (projects, KPIs, experience) as JSON</summary>
-            <textarea className="jsonbox" value={jsonText} onChange={(e) => setJsonText(e.target.value)} spellCheck={false} />
-            <div className="publish-row">
-              <button className="btn btn-ghost" onClick={applyJson}>Apply JSON changes</button>
-              {jsonErr && <span className="status" style={{ marginTop: 0 }}><span className="err">{jsonErr}</span></span>}
-            </div>
-          </details>
+          {isOwner && (
+            <details className="adv">
+              <summary>Advanced (owner): edit raw JSON</summary>
+              <textarea className="jsonbox" value={jsonText} onChange={(e) => setJsonText(e.target.value)} spellCheck={false} />
+              <div className="publish-row">
+                <button className="btn btn-ghost" onClick={applyJson}>Apply JSON changes</button>
+                {jsonErr && <span className="status" style={{ marginTop: 0 }}><span className="err">{jsonErr}</span></span>}
+              </div>
+            </details>
+          )}
 
           {error && <div className="status"><span className="err">✕ {error}</span></div>}
 

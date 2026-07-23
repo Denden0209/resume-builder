@@ -19,8 +19,9 @@ function Feature({ children, dim = false }) {
   );
 }
 
-export default function PricingPage() {
-  const cc = headers().get("x-vercel-ip-country") || "US";
+export default function PricingPage({ searchParams }) {
+  const h = headers();
+  const cc = (searchParams?.cc || h.get("x-vercel-ip-country") || "US").toUpperCase();
   const live = stripeConfigured();
   const p = pricesFor(cc);
 

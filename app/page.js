@@ -1,10 +1,13 @@
 import Builder from "@/components/Builder";
+import { getUser } from "@/lib/supabase/server";
 import AuthButton from "@/components/AuthButton";
 import MobileNav from "@/components/MobileNav";
 import AdminLink from "@/components/AdminLink";
 import { SITE_NAME, SITE_SHORT, SITE_TAGLINE } from "@/lib/site";
 
-export default function Home() {
+export default async function Home() {
+  const _u = await getUser();
+  const isOwner = !!(process.env.OWNER_EMAIL && _u?.email && _u.email.toLowerCase() === process.env.OWNER_EMAIL.toLowerCase());
   return (
     <main id="top">
       <header className="topbar">
@@ -40,7 +43,7 @@ export default function Home() {
         <div className="step"><i>STEP 03</i><h3>Share</h3><p>Publish to a live link and send it to recruiters.</p></div>
       </div>
 
-      <Builder />
+      <Builder isOwner={isOwner} />
 
       <footer className="site-footer">
         <div className="wrap" style={{ display: "flex", justifyContent: "space-between", padding: "24px", fontFamily: "IBM Plex Mono, monospace", fontSize: 11, color: "var(--muted)", letterSpacing: ".08em", flexWrap: "wrap", gap: 10 }}>

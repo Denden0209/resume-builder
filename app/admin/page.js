@@ -32,6 +32,10 @@ async function loadDashboard() {
   const dailyParses = daily.slice(0, 14);
   const dailyPublishes = daily.slice(14);
 
+  // Subscribers: derive owner ids from published pages, then read their plans
+  const ownerIds = new Set();
+  // (recs fetched below reuse this)
+
   // Page details (registry may predate some deletions; filter nulls)
   const pages = [];
   if (slugs.length) {
@@ -45,15 +49,39 @@ async function loadDashboard() {
           field: rec.data.profession?.field || "—",
           location: rec.data.location || "—",
           createdAt: rec.createdAt,
+          ownerId: rec.ownerId || null,
         });
+        if (rec.ownerId) ownerIds.add(rec.ownerId);
       }
     });
   }
+
+  // Read plan records for every known owner; keep only paying (pro) ones
+  const idArr = [...ownerIds];
+  const planRecs = idArr.length ? await Promise.all(idArr.map((id) => redis.get(`plan:${id}`))) : [];
+  const subscribers = [];
+  idArr.forEach((id, i) => {
+    const pr = planRecs[i];
+    if (pr && pr.tier === "pro" && (!pr.expiresAt || pr.expiresAt > Date.now())) {
+      const owned = pages.find((pg) => pg.ownerId === id);
+      subscribers.push({
+        name: owned?.name || "—",
+        email: owned?.email || "—",
+        kind: pr.source === "stripe-subscription" ? "Monthly sub"
+            : pr.source === "stripe-pass" ? "90-day pass"
+            : pr.grantedBy === "manual" ? "Manual grant" : "Pro",
+        expiresAt: pr.expiresAt || null,
+      });
+    }
+  });
+  const paidCount = await redis.get("stats:paid");
 
   return {
     parses: +(parses || 0),
     publishes: +(publishes || 0),
     interest: +(interest || 0),
+    subscribers,
+    paidCount: +(paidCount || 0),
     days: days.map((d, i) => ({ day: d.slice(5), parses: +(dailyParses[i] || 0), publishes: +(dailyPublishes[i] || 0) })).reverse(),
     pages,
   };
@@ -122,6 +150,7 @@ export default async function AdminPage({ searchParams }) {
           <div className="kpi"><b>{conversion}%</b><span>Parse → publish rate</span></div>
           <div className="kpi ai-kpi"><b>{dash.pages.length}</b><span>Live pages</span></div>
           <div className="kpi"><b>{dash.interest}</b><span>Upgrade clicks</span></div>
+          <div className="kpi ai-kpi"><b>{dash.subscribers.length}</b><span>Active subscribers</span></div>
         </div>
 
         <div className="spark-wrap" style={{ marginBottom: 40 }}>
@@ -137,6 +166,33 @@ export default async function AdminPage({ searchParams }) {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="sec-head">
+          <span className="eyebrow">{dash.subscribers.length} paying</span>
+          <h2>Active subscribers</h2>
+        </div>
+        <div style={{ overflowX: "auto", border: "1px solid var(--line)", borderRadius: 12, background: "rgba(1,42,74,.35)", marginBottom: 34 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+            <thead><tr>
+              {["Name", "Email", "Plan", "Renews / Expires"].map((hh) => (
+                <th key={hh} style={{ textAlign: "left", padding: "12px 16px", fontFamily: "IBM Plex Mono, monospace", fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sky)", borderBottom: "1px solid var(--line)" }}>{hh}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {dash.subscribers.map((su, i) => (
+                <tr key={i} style={{ borderBottom: "1px solid rgba(97,165,194,.1)" }}>
+                  <td style={{ padding: "11px 16px", color: "var(--ink)", fontWeight: 600 }}>{su.name}</td>
+                  <td style={{ padding: "11px 16px", color: "var(--muted)" }}>{su.email}</td>
+                  <td style={{ padding: "11px 16px", color: "var(--bright)" }}>{su.kind}</td>
+                  <td style={{ padding: "11px 16px", color: "var(--muted)", fontFamily: "IBM Plex Mono, monospace", fontSize: 11.5 }}>{su.expiresAt ? fmtDate(su.expiresAt) : "ongoing"}</td>
+                </tr>
+              ))}
+              {dash.subscribers.length === 0 && (
+                <tr><td colSpan={4} style={{ padding: 20, color: "var(--muted)", textAlign: "center" }}>No active subscribers yet.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
         <div className="sec-head">

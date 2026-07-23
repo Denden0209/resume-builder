@@ -142,3 +142,20 @@ The app runs fine WITHOUT this (anonymous publishing) — accounts light up when
 
 Pro features shipped: AI Bullet Rewriter, build-from-scratch (no resume needed),
 PDF + Word resume export (CV-style template), 5 pages, 20 parses/mo.
+
+## New in this build
+
+- **PH pricing fixed** — Philippines shows ₱300/mo, ₱600 pass (billed USD-equivalent, Option B).
+  Test any country's pricing with /pricing?cc=PH (or ?cc=US, ?cc=MY, etc.)
+- **Publish as new page** — when editing/tailoring, choose "Update this page" (same link)
+  or "Publish as new page" (separate link — for job-tailored versions; respects page limit)
+- **JSON editor hidden** — only visible to OWNER_EMAIL; regular users get clean field editing
+- **Rename link** (Pro) — vanity URLs from the dashboard; collision-safe, warns old link breaks
+- **Admin subscribers** — /admin now lists active paying users, plan type, and expiry
+- **New subscription email** — enable in Stripe → Settings → Business → Notifications →
+  toggle "Successful payments" to your email (no code; most reliable). This emails you on every sale.
+
+## New-subscription email (60-second setup, no code)
+Stripe Dashboard → Settings → Notifications (or Business settings → Emails) →
+enable email on successful payments → sent to your Stripe account email.
+For a different inbox, add it under Team/notifications.

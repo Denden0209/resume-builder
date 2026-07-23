@@ -8,6 +8,8 @@ export default function MyPages({ pages: initial }) {
   const [qrFor, setQrFor] = useState(null); // slug
   const [copied, setCopied] = useState(null);
   const [busy, setBusy] = useState(null);
+  const [renaming, setRenaming] = useState(null); // slug being renamed
+  const [newName, setNewName] = useState("");
 
   const urlFor = (slug) =>
     (typeof window !== "undefined" ? window.location.origin : "") + "/u/" + slug;
@@ -49,6 +51,25 @@ export default function MyPages({ pages: initial }) {
       a.download = `${slug}-resume.${format}`;
       a.click();
       URL.revokeObjectURL(a.href);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function doRename(oldSlug) {
+    setBusy(oldSlug + "rename");
+    try {
+      const res = await fetch("/api/rename", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldSlug, newSlug: newName }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || "Rename failed");
+      setPages((prev) => prev.map((x) => x.slug === oldSlug ? { ...x, slug: j.slug } : x));
+      setRenaming(null); setNewName("");
     } catch (e) {
       alert(e.message);
     } finally {
@@ -102,11 +123,28 @@ export default function MyPages({ pages: initial }) {
               <a className="chip" href={`/?edit=${p.slug}`} style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Edit</a>
               <button className="chip" onClick={() => exportFile(p.slug, "pdf")} disabled={busy === p.slug + "pdf"} title="Pro: export as PDF resume">{busy === p.slug + "pdf" ? "…" : "PDF ↓"}</button>
               <button className="chip" onClick={() => exportFile(p.slug, "docx")} disabled={busy === p.slug + "docx"} title="Pro: export as Word resume">{busy === p.slug + "docx" ? "…" : "Word ↓"}</button>
+              <button className="chip" onClick={() => { setRenaming(renaming === p.slug ? null : p.slug); setNewName(p.slug); }}>Rename link</button>
               <button className="chip" onClick={() => remove(p.slug)} disabled={busy === p.slug}
                 style={{ borderColor: "rgba(252,165,165,.35)", color: "#FCA5A5" }}>
                 {busy === p.slug ? "…" : "Delete"}
               </button>
             </div>
+
+            {renaming === p.slug && (
+              <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 11, color: "var(--muted)" }}>/u/</span>
+                  <input value={newName} onChange={(e) => setNewName(e.target.value)}
+                    placeholder="your-custom-name"
+                    style={{ flex: 1, minWidth: 120, background: "rgba(1,20,38,.7)", border: "1px solid var(--line)", borderRadius: 7, color: "var(--ink)", padding: "8px 11px", fontFamily: "IBM Plex Mono, monospace", fontSize: 13 }} />
+                  <button className="chip" onClick={() => doRename(p.slug)} disabled={busy === p.slug + "rename"}
+                    style={{ borderColor: "var(--sky)", color: "var(--bright)" }}>{busy === p.slug + "rename" ? "…" : "Save"}</button>
+                </div>
+                <p style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 9.5, color: "#F5A524", letterSpacing: ".04em" }}>
+                  ⚠ Your old link will stop working after renaming. Pro feature.
+                </p>
+              </div>
+            )}
 
             {qrFor === p.slug && (
               <div style={{ textAlign: "center", paddingTop: 12, borderTop: "1px dashed var(--line)" }}>
